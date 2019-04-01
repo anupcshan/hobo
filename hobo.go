@@ -113,10 +113,18 @@ type localConfig struct {
 }
 
 func newLocalConfigFromFile(fname string) (*localConfig, error) {
+	vmrunPath, err := exec.LookPath("vmrun")
+	if err != nil {
+		return nil, err
+	}
+	vdiskmanagerPath, err := exec.LookPath("vmware-vdiskmanager")
+	if err != nil {
+		return nil, err
+	}
 	lc := &localConfig{
 		AppConfig: appConfig{
-			VmrunBinaryPath:        "/Applications/VMware Fusion.app/Contents/Library/vmrun",
-			VdiskManagerBinaryPath: "/Applications/VMware Fusion.app/Contents/Library/vmware-vdiskmanager",
+			VmrunBinaryPath:        vmrunPath,
+			VdiskManagerBinaryPath: vdiskmanagerPath,
 			HoboDir:                "$HOME/.hobo.d",
 		},
 	}
@@ -706,7 +714,7 @@ func runClone(ctx context.Context, cmd *cmdflag.Command, args []string) {
 		// if reuse_home_volume:
 		//   cmd_args += ['--exclude', '*.vmwarevm/home*.vmdk']
 
-		err := runCmd("/usr/bin/tar", "xzvf", archive, "-C", cfg.AppConfig.boxcarsDir())
+		err := runCmd("tar", "xJvf", archive, "-C", cfg.AppConfig.boxcarsDir())
 		if err != nil {
 			log.Fatalf("failed cloning: %s", err)
 		}
