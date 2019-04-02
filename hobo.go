@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"syscall"
@@ -112,8 +113,30 @@ type localConfig struct {
 	Name      string
 }
 
+var darwinExecutables = map[string]string{
+	"vmrun":               "/Applications/VMware Fusion.app/Contents/Library/vmrun",
+	"vmware-vdiskmanager": "/Applications/VMware Fusion.app/Contents/Library/vmware-vdiskmanager",
+}
+
+func lookupExecutable(file string) (string, error) {
+	switch runtime.GOOS {
+	case "darwin":
+		exe, ok := darwinExecutables[file]
+		if ok {
+			return exe, nil
+		}
+		// TODO: Can potentially fall back to exec.LookPath or searching in whitelisted paths here.
+		return "", fmt.Errorf("Unknown executable %s", file)
+
+	case "linux":
+		return exec.LookPath(file)
+	default:
+		return "", fmt.Errorf("Unsupported OS: %s", runtime.GOOS)
+	}
+}
+
 func newLocalConfigFromFile(fname string) (*localConfig, error) {
-	vmrunPath, err := exec.LookPath("vmrun")
+	vmrunPath, err := lookupExecutable("vmrun")
 	if err != nil {
 		return nil, err
 	}
